@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>@ViewData["Title"] - Bertoni Test</title>
+
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css" integrity="sha384-lKuwvrZot6UHsBSfcMvOkWwlCMgc0TaWr+30HWe3a4ltaBwTZhyTEggF5tJv8tbt" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.5.2/animate.min.css">
+
+    <link href="~/css/foundation.css" rel="stylesheet" />
+    <link href="~/css/app.css" rel="stylesheet" />
+
+    @RenderSection("Styles", required: false)
+</head>
+
+<body>
+    <nav class="top-bar">
+        <div class="top-bar-left">
+            <ul class="dropdown menu" data-dropdown-menu>
+                <li class="menu-text">Bertoni Test</li>
+                <li><a href="#">Inicio</a></li>
+            </ul>
+        </div>
+
+    </nav>
+
+    <div class="grid-container">
+        @RenderBody()
+
+        <hr>
+        <div class="grid-x align-justify align-middle">
+            <div class="small-12 medium-shrink cell">
+                <ul class="menu">
+                    <li class="align-self-middle">Bertoni Test</li>
+                    <li><a href="#">Inicio</a></li>
+                </ul>
+            </div>
+            <div class="small-12 medium-shrink cell">
+                <span>Copyright Bertoni Test 2018</span>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="~/js/vendor/jquery.js"></script>
+    <script src="~/js/vendor/what-input.js"></script>
+    <script src="~/js/vendor/foundation.js"></script>
+
+    <script src="~/js/app.js"></script>
+
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

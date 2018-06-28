@@ -1,0 +1,214 @@
+﻿@model IEnumerable<BertoniTest.Library.Models.Album>
+
+@section Styles{
+    <link href="https://cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css" rel="stylesheet" />
+}
+
+
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<div class="grid-x cell">
+    <nav aria-label="You are here:" role="navigation">
+        <ul class="breadcrumbs">
+            <li class="disabled">Inicio</li>
+            <li>
+                <span class="show-for-sr">Actual: </span> Albums
+            </li>
+        </ul>
+    </nav>
+</div>
+<div class="grid-x grid-margin-x">
+    <div class="medium-6 large-5 cell large-offset-1">
+        <h3>Bertoni Test Project</h3>
+        <p>
+            Seleccione el Album de su preferencia para ver la galería de fotos y comentarios.
+        </p>
+        <label>
+            Album
+            <select id="AlbumsList" asp-items="(SelectList)ViewBag.Albums"></select>
+        </label>
+
+        <button id="ViewAlbumPhotos" type="button" title="Visualizar Album" class="button large expanded"><i class="fa fa-images"></i> Visualizar Album</button>
+    </div>
+</div>
+
+<div class="">
+    <hr>
+    <h1>Fotos</h1>
+    <div id="PhotosList" class="grid-x grid-margin-x medium-up-3 large-up-5">
+        <table id="tablePhotos">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Imágen</th>
+                    <th>Url</th>
+                    <th class="no-sort" style="text-align: center; width:7rem;">
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <hr>
+
+    <h1>Comentarios</h1>
+    <div id="CommentsList" class="grid-x grid-margin-x medium-up-3 large-up-5">
+        <table id="tableComments" class="stack">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Correo Electrónico</th>
+                    <th>Comentario</th>
+
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+
+    <script src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js"></script>
+
+    <script type="text/javascript">
+        var $tablePhotos;
+        var $tableComments;
+
+        $(function () {
+
+            $("#ViewAlbumPhotos").on("click", function () {
+
+                var albumId = $("#AlbumsList option:checked").val();
+
+                $.get("/Home/GetPhotos?AlbumId=" + albumId, function (response) {
+
+                    if ($tablePhotos !== undefined) {
+                        $tablePhotos.destroy();
+                    }
+
+                    $tablePhotos = $('#tablePhotos').DataTable({
+                        processing: true,
+                        deferRender: true,
+                        pageLength: 5,
+                        dom: 'Bfrtip',
+                        data: response,
+                        columns: [
+                            {
+                                data: "title"
+                            },
+                            {
+                                data: "thumbnailUrl",
+                                defaultContent: '',
+                                render: function (data, type, full, meta) {
+                                    return "<img src='" + data + "' alt='" + full.title + "' />";
+                                }
+                            },
+                            {
+                                data: "url",
+                                defaultContent: '',
+                                render: function (data, type, full, meta) {
+                                    return "<a href='" + data + "' target='_blank'>" + data + "</a>";
+                                }
+                            },
+                            {
+                                data: "albumId",
+                                defaultContent: '',
+                                render: function (data, type, full, meta) {
+                                    var menu = '<div style="display:inline-flex;">' +
+                                        '<a class="btn btn-warning btn-xs" onclick="GetComments(' + "'" + data + "'" + ',' + meta.row + ')" title="Ver Comentarios"><i class="fa fa-pencil">Ver Comentarios</i></a>' +
+                                        '</div>'
+
+                                    return menu;
+                                }
+                            }
+                        ],
+                        rowId: "id",
+                        order: [[0, "desc"]],
+                        columnDefs: [{
+                            targets: 'no-sort',
+                            orderable: false
+                        }],
+                        language: {
+                            url: "//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json",
+                            buttons: {
+                                copyTitle: 'Copiando a la Memoria',
+                                copyKeys: 'Presione <i>ctrl</i> y <i>\u2318</i> + <i>C</i> para copiar la información de la Tabla a la memoria. <br><br>Para anular, haga click en el título de la ventana emergente.',
+                                copySuccess: {
+                                    _: 'Copiado %d filas',
+                                    1: 'Copiado 1 fila'
+                                }
+                            }
+                        }
+                    }); //End Table
+
+
+                }).fail(function (err) {
+                    alert(err.message);
+                });
+            });
+
+        }); //End Init
+
+        function GetComments(photoId) {
+
+
+            $.get("/Home/GetComments?PhotoId=" + photoId, function (response) {
+
+                if ($tableComments !== undefined) {
+                    $tableComments.destroy();
+                }
+
+                $tableComments = $('#tableComments').DataTable({
+                    processing: true,
+                    deferRender: true,
+                    pageLength: 5,
+                    dom: 'frtip',
+                    data: response,
+                    columns: [
+                        {
+                            data: "name"
+                        },
+                        {
+                            data: "email",
+                            defaultContent: '',
+                            render: function (data, type, full, meta) {
+                                return "<a href='" + data + "' target='_blank'>" + data + "</a>";
+                            }
+                        },
+                        {
+                            data: "body"
+                        }
+                    ],
+                    rowId: "postId",
+                    order: [[0, "desc"]],
+                    columnDefs: [{
+                        targets: 'no-sort',
+                        orderable: false
+                    }],
+                    language: {
+                        url: "//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json",
+                        buttons: {
+                            copyTitle: 'Copiando a la Memoria',
+                            copyKeys: 'Presione <i>ctrl</i> y <i>\u2318</i> + <i>C</i> para copiar la información de la Tabla a la memoria. <br><br>Para anular, haga click en el título de la ventana emergente.',
+                            copySuccess: {
+                                _: 'Copiado %d filas',
+                                1: 'Copiado 1 fila'
+                            }
+                        }
+                    }
+                }); //End Table
+
+
+            }).fail(function (err) {
+                alert(err.message);
+            });
+
+        }
+
+    </script>
+}
