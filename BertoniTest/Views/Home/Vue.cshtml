@@ -1,6 +1,52 @@
 ﻿@model IEnumerable<BertoniTest.Library.Models.Album>
 
 @section Styles{
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.7/semantic.min.css" rel="stylesheet" />
+
+    <style type="text/css">
+        img {
+            width: 5rem;
+        }
+
+        .callout {
+            width: 100%;
+        }
+
+        /* Loading Animation: */
+        .vuetable-wrapper {
+            position: relative;
+            opacity: 1;
+        }
+
+        .loader {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s linear;
+            background: url('/images/loader.gif') no-repeat bottom center;
+            width: 200px;
+            height: 30px;
+            font-size: 1em;
+            text-align: center;
+            margin-left: -100px;
+            letter-spacing: 4px;
+            color: #3E97F6;
+            position: absolute;
+            top: 160px;
+            left: 50%;
+        }
+
+        .loading .loader {
+            visibility: visible;
+            opacity: 1;
+            z-index: 100;
+        }
+
+        .loading .vuetable {
+            opacity: 0.3;
+            filter: alpha(opacity=30); /* IE8 and earlier */
+        }
+    </style>
 }
 
 
@@ -8,124 +54,178 @@
     ViewData["Title"] = "Inicio";
 }
 
-<div class="grid-x cell">
-    <nav aria-label="You are here:" role="navigation">
-        <ul class="breadcrumbs">
-            <li class="disabled">Inicio</li>
-            <li>
-                <span class="show-for-sr">Actual: </span> Albums
-            </li>
-        </ul>
-    </nav>
-</div>
-<div class="grid-x grid-margin-x">
-    <div class="medium-6 large-5 cell large-offset-1">
-        <h3>Bertoni Test Project</h3>
-        <p>
-            Seleccione el Album de su preferencia para ver la galería de fotos y comentarios.
-        </p>
-        <label>
-            Album
-            <select id="AlbumsList" asp-items="(SelectList)ViewBag.Albums"></select>
-        </label>
-
-        <button id="ViewAlbumPhotos" type="button" title="Visualizar Album" class="button large expanded"><i class="fa fa-images"></i> Visualizar Album</button>
-    </div>
-</div>
-
-<div class="">
-    <hr>
-    <h1>Fotos</h1>
-    <div id="PhotosList" class="grid-x grid-margin-x medium-up-3 large-up-5">
-        <table>
-            <thead>
-                <tr>
-                    <th v-on:click="sort('title')">Título</th>
-                    <th v-on:click="sort('url')">Url</th>
-                    <th v-on:click="sort('thumbnailUrl')">Imágen</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody v-for="photo in photos">
-                <tr>
-                    <td>{{ photo.title }}</td>
-                    <td><a :href="photo.url" target="_blank">{{ photo.url }}</a></td>
-                    <td>{{ photo.thumbnailUrl }}</td>
-                    <td v-on:click="getComments(photo.id,photo.title)">Ver comentarios</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <p>
-            <button v-on:click="prevPage">Anterior</button>
-            <button v-on:click="nextPage">Siguiente</button>
-        </p>
+<div id="App">
+    <div class="grid-x cell">
+        <nav aria-label="You are here:" role="navigation">
+            <ul class="breadcrumbs">
+                <li class="disabled">Inicio</li>
+                <li>
+                    <span class="show-for-sr">Actual: </span> Albums
+                </li>
+            </ul>
+        </nav>
     </div>
 
-    <hr>
+    <div class="grid-x grid-margin-x" style="margin:1rem;">
+        <div class="medium-6 large-5 cell">
+            <h3>Bertoni Test Project</h3>
+            <p>
+                Seleccione el Album de su preferencia para ver la galería de fotos y comentarios.
+            </p>
+            <label>
+                Album
+                <select v-model="selectedAlbum">
+                    <option v-for="album in albums" v-bind:value="{id:album.value, text:album.text}">
+                        {{ album.text }}
+                    </option>
+                </select>
+                <span>Selected: {{ selectedAlbum.id }}</span>
+            </label>
 
-    <div id="CommentsList" class="grid-x grid-margin-x medium-up-3 large-up-5">
-        <h1>Comentarios {{photoSelected}}</h1>
+            <button type="button" v-bind:disabled="disableButton ? 'disabled' : null" v-on:click="getPhotos(selectedAlbum)" title="Visualizar Album" class="button large expanded"><i class="fa fa-images"></i> Visualizar Album</button>
+        </div>
+    </div>
 
-        <table id="tableComments" class="stack">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Correo Electrónico</th>
-                    <th>Comentario</th>
+    <div class="vuetable-wrapper">
+            <div class="loader">Cargando</div>
+            <vuetable ref="vuetable"
+                      :fields="fields"
+                      :api-url="urlTest"
+                      pagination-path=""
+                      @@vuetable:pagination-data="onPaginationData"
+                       wrapper-class="vuetable-wrapper">
 
-                </tr>
-            </thead>
-            <tbody v-for="comment in comments">
-                <tr>
-                    <td>{{comment.name}}</td>
-                    <td>{{comment.email}}</td>
-                    <td>{{comment.body}}</td>
-                </tr>
-            </tbody>
-        </table>
+                <template slot="actions" scope="props">
+                    <div class="table-button-container">
+                        <button class="ui button" v-on:click="editRow(props.rowData)"><i class="fa fa-edit"></i> Edit</button>&nbsp;&nbsp;
+                        <button class="ui basic red button" v-on:click="deleteRow(props.rowData)"><i class="fa fa-remove"></i> Delete</button>&nbsp;&nbsp;
+                    </div>
+                </template>
+            </vuetable>
+
+            <vuetable-pagination ref="pagination"
+                  @@vuetable-pagination:change-page="onChangePage">
+            </vuetable-pagination>
+        </div>
+
+    <div>
+        <div class="grid-x grid-margin-x medium-up-3 large-up-5" v-if="showPhotos" style="margin:1rem;">
+            <div class="callout primary">
+                <h4>Fotos Album: <span>{{selectedAlbumText}}</span></h4>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th v-on:click="sort('thumbnailUrl')">Imágen</th>
+                        <th v-on:click="sort('title')">Título</th>
+                        <th v-on:click="sort('url')">Url</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody v-for="photo in sortedPhotos">
+                    <tr class="animated slideInLRight">
+                        <td><img :src="photo.thumbnailUrl" :alt="photo.title" /></td>
+                        <td>{{ photo.title }}</td>
+                        <td><a :href="photo.url" target="_blank">{{ photo.url }}</a></td>
+                        <td><button class="button info" type="button" v-on:click="getComments(photo)"><i class="fa fa-pencil"></i> Ver comentarios</button></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p>
+                <button v-on:click="prevPage">Anterior</button>
+                <button v-on:click="nextPage">Siguiente</button>
+            </p>
+        </div>
+
+
+        <div class="grid-x grid-margin-x medium-up-3 large-up-5" v-if="showComments" style="margin:1rem;">
+            <div class="callout secondary">
+                <h4>Comentarios Foto: {{photoSelectedText}}</h4>
+            </div>
+
+            <table id="tableComments" class="stack">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Correo Electrónico</th>
+                        <th>Comentario</th>
+
+                    </tr>
+                </thead>
+                <tbody v-for="comment in comments">
+                    <tr>
+                        <td>{{comment.name}}</td>
+                        <td><a :href="comment.email" target="_blank">{{ comment.email }}</a></td>
+                        <td>{{comment.body}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
-
 @section Scripts {
 
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.2.6/vue.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.1/axios.min.js"></script>
+
+    <script src="https://unpkg.com/vuetable-2@1.6.0"></script>
 
     <script type="text/javascript">
-        var urlPhotos = "https://jsonplaceholder.typicode.com/photos";
-        var urlComments = "https://jsonplaceholder.typicode.com/comments";
+        Vue.use(Vuetable)
 
-        const commentsList = new Vue({
-            el: '#CommentsList',
-            data: {
-                comments: [],
-                photoSelected: ''
-            }
-        });
-
-        const photosList = new Vue({
-            el: '#PhotosList',
+        new Vue({
+            el: '#App',
+            components: {
+                'vuetable-pagination': Vuetable.VuetablePagination
+            },
             data: {
                 photos: [],
+                comments: [],
+                photoSelectedText: '',
+                showPhotos: false,
+                showComments: false,
+                disableButton: true,
+                selectedAlbum: '',
+                selectedAlbumText: '',
+                albums: [],
                 currentSort: 'title',
                 currentSortDir: 'asc',
                 pageSize: 5,
-                currentPage: 1
+                currentPage: 1,
+                urlUsers: "https://vuetable.ratiw.net/api/users",
+                urlTest: "/Home/GetAlbumsTableAsync",
+                urlAlbums: "/Home/GetAlbumsSelectListAsync",
+                urlPhotos: "/Home/GetPhotosListAsync",
+                urlComments: "/Home/GetCommentsListAsync",
+                //fields: ['name', 'email', 'birthdate', 'nickname', 'gender', '__slot:actions']
+                fields: ['id', 'title', '__slot:actions']
             },
             created: function () {
-                this.getPhotos();
+                this.getAlbums();
             },
             methods: {
-                getPhotos: function () {
-                    $.get(urlPhotos).then((response) => {
-                        this.photos = response;
+                getAlbums: function () {
+                    $.get(this.urlAlbums).then((response) => {
+                        this.albums = response;
+                        this.disableButton = false;
                     });
                 },
-                getComments: function (id, title) {
-                    $.get(urlComments + "?photoId=" + id).then((response) => {
-                        commentsList.comments = response;
-                        commentsList.photoSelected = title;
+                getPhotos: function (album) {
+                    $.get(this.urlPhotos + "?albumId=" + album.id).then((response) => {
+                        this.photos = response;
+                        this.showPhotos = true;
+                        this.selectedAlbumText = album.text;
+                    });
+                },
+                getComments: function (photo) {
+                    $.get(this.urlComments + "?photoId=" + photo.albumId).then((response) => {
+                        this.comments = response;
+                        this.showComments = true;
+                        this.photoSelectedText = photo.title;
                     });
 
                 },
@@ -141,6 +241,18 @@
                 },
                 prevPage: function () {
                     if (this.currentPage > 1) this.currentPage--;
+                },
+                onPaginationData(paginationData) {
+                    this.$refs.pagination.setPaginationData(paginationData)
+                },
+                onChangePage(page) {
+                    this.$refs.vuetable.changePage(page)
+                },
+                editRow(rowData) {
+                    alert("You clicked edit on" + JSON.stringify(rowData))
+                },
+                deleteRow(rowData) {
+                    alert("You clicked delete on" + JSON.stringify(rowData))
                 }
             },
             computed: {
@@ -152,6 +264,17 @@
                         if (a[this.currentSort] > b[this.currentSort]) return 1 * modifier;
                         return 0;
                     });
+                }
+            },
+            events: {
+                'vuetable:loading': function () {
+                    // display your loading notification
+                    console.log("load started");
+                },
+
+                'vuetable:load-success': function (response) {
+                    // hide loading notification
+                    console.log("load completed");
                 }
             }
         })

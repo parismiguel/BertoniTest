@@ -35,6 +35,65 @@ namespace BertoniTest.Controllers
             return View();
         }
 
+        public async Task<IActionResult> GetAlbumsSelectListAsync()
+        {
+            List<Album> albums = await GetAlbumsCollectionAsync();
+
+            SelectList model = new SelectList(albums, "Id", "Title");
+
+            return Json(model);
+        }
+
+        public async Task<IActionResult> GetPhotosListAsync(int albumId)
+        {
+            List<Photo> model = await GetPhotos(albumId);
+
+            return Json(model);
+        }
+
+        public async Task<IActionResult> GetCommentsListAsync(int photoId)
+        {
+            List<Comment> model = await GetComments(photoId);
+
+            return Json(model);
+        }
+
+
+
+
+        public async Task<IActionResult> GetAlbumsTableAsync()
+        {
+            List<Album> albums = await GetAlbumsCollectionAsync();
+
+            VuetableResponse model = new VuetableResponse
+            {
+                Total = albums.Count,
+                Per_page = 7,
+                Current_page = 1,
+                Last_page = Convert.ToInt32(Math.Round(Convert.ToDecimal(albums.Count / 7),0)),
+                Next_page_url = $"{AppSettings.AlbumsUrl}?page=2",
+                Prev_page_url = null,
+                From = 1,
+                To = 10,
+                Data = albums.ToArray()
+            };
+
+            return Json(model);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         public async Task<List<Album>> GetAlbumsCollectionAsync()
         {
             List<Album> output = new List<Album>();
@@ -43,7 +102,8 @@ namespace BertoniTest.Controllers
             {
                 Response albums = await Api.WebRequestAsync(AppSettings.AlbumsUrl, Enums.HttpMethod.GET);
 
-                output = JsonConvert.DeserializeObject<List<Album>>(albums.Message);
+                output = JsonConvert.DeserializeObject<List<Album>>(albums.Message).OrderBy(a => a.Title).ToList();
+
 
             }
             catch (Exception ex)
@@ -63,7 +123,7 @@ namespace BertoniTest.Controllers
                 Response photos = await Api.WebRequestAsync(AppSettings.PhotosUrl, Enums.HttpMethod.GET);
 
                 output = JsonConvert.DeserializeObject<List<Photo>>(photos.Message)
-                                .Where(x=>x.AlbumId== albumId).ToList();
+                                .Where(x => x.AlbumId == albumId).ToList();
 
             }
             catch (Exception ex)
@@ -74,7 +134,7 @@ namespace BertoniTest.Controllers
             return output;
         }
 
-        public async Task<List<Comment>> GetComments(int photoId)
+        public async Task<List<Comment>> GetComments(int albumId)
         {
             List<Comment> output = new List<Comment>();
 
@@ -83,7 +143,7 @@ namespace BertoniTest.Controllers
                 Response comment = await Api.WebRequestAsync(AppSettings.ComentsUrl, Enums.HttpMethod.GET);
 
                 output = JsonConvert.DeserializeObject<List<Comment>>(comment.Message)
-                                .Where(x => x.PostId == photoId).ToList();
+                                .Where(x => x.PostId == albumId).ToList();
 
             }
             catch (Exception ex)
