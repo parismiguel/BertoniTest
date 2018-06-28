@@ -1,0 +1,159 @@
+﻿@model IEnumerable<BertoniTest.Library.Models.Album>
+
+@section Styles{
+}
+
+
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<div class="grid-x cell">
+    <nav aria-label="You are here:" role="navigation">
+        <ul class="breadcrumbs">
+            <li class="disabled">Inicio</li>
+            <li>
+                <span class="show-for-sr">Actual: </span> Albums
+            </li>
+        </ul>
+    </nav>
+</div>
+<div class="grid-x grid-margin-x">
+    <div class="medium-6 large-5 cell large-offset-1">
+        <h3>Bertoni Test Project</h3>
+        <p>
+            Seleccione el Album de su preferencia para ver la galería de fotos y comentarios.
+        </p>
+        <label>
+            Album
+            <select id="AlbumsList" asp-items="(SelectList)ViewBag.Albums"></select>
+        </label>
+
+        <button id="ViewAlbumPhotos" type="button" title="Visualizar Album" class="button large expanded"><i class="fa fa-images"></i> Visualizar Album</button>
+    </div>
+</div>
+
+<div class="">
+    <hr>
+    <h1>Fotos</h1>
+    <div id="PhotosList" class="grid-x grid-margin-x medium-up-3 large-up-5">
+        <table>
+            <thead>
+                <tr>
+                    <th v-on:click="sort('title')">Título</th>
+                    <th v-on:click="sort('url')">Url</th>
+                    <th v-on:click="sort('thumbnailUrl')">Imágen</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody v-for="photo in photos">
+                <tr>
+                    <td>{{ photo.title }}</td>
+                    <td><a :href="photo.url" target="_blank">{{ photo.url }}</a></td>
+                    <td>{{ photo.thumbnailUrl }}</td>
+                    <td v-on:click="getComments(photo.id,photo.title)">Ver comentarios</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p>
+            <button v-on:click="prevPage">Anterior</button>
+            <button v-on:click="nextPage">Siguiente</button>
+        </p>
+    </div>
+
+    <hr>
+
+    <div id="CommentsList" class="grid-x grid-margin-x medium-up-3 large-up-5">
+        <h1>Comentarios {{photoSelected}}</h1>
+
+        <table id="tableComments" class="stack">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Correo Electrónico</th>
+                    <th>Comentario</th>
+
+                </tr>
+            </thead>
+            <tbody v-for="comment in comments">
+                <tr>
+                    <td>{{comment.name}}</td>
+                    <td>{{comment.email}}</td>
+                    <td>{{comment.body}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+    <script type="text/javascript">
+        var urlPhotos = "https://jsonplaceholder.typicode.com/photos";
+        var urlComments = "https://jsonplaceholder.typicode.com/comments";
+
+        const commentsList = new Vue({
+            el: '#CommentsList',
+            data: {
+                comments: [],
+                photoSelected: ''
+            }
+        });
+
+        const photosList = new Vue({
+            el: '#PhotosList',
+            data: {
+                photos: [],
+                currentSort: 'title',
+                currentSortDir: 'asc',
+                pageSize: 5,
+                currentPage: 1
+            },
+            created: function () {
+                this.getPhotos();
+            },
+            methods: {
+                getPhotos: function () {
+                    $.get(urlPhotos).then((response) => {
+                        this.photos = response;
+                    });
+                },
+                getComments: function (id, title) {
+                    $.get(urlComments + "?photoId=" + id).then((response) => {
+                        commentsList.comments = response;
+                        commentsList.photoSelected = title;
+                    });
+
+                },
+                sort: function (s) {
+                    //if s == current sort, reverse
+                    if (s === this.currentSort) {
+                        this.currentSortDir = this.currentSortDir === 'asc' ? 'desc' : 'asc';
+                    }
+                    this.currentSort = s;
+                },
+                nextPage: function () {
+                    if ((this.currentPage * this.pageSize) < this.photos.length) this.currentPage++;
+                },
+                prevPage: function () {
+                    if (this.currentPage > 1) this.currentPage--;
+                }
+            },
+            computed: {
+                sortedPhotos: function () {
+                    return this.photos.sort((a, b) => {
+                        let modifier = 1;
+                        if (this.currentSortDir === 'desc') modifier = -1;
+                        if (a[this.currentSort] < b[this.currentSort]) return -1 * modifier;
+                        if (a[this.currentSort] > b[this.currentSort]) return 1 * modifier;
+                        return 0;
+                    });
+                }
+            }
+        })
+    </script>
+}

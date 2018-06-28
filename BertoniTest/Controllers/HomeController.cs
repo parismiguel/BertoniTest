@@ -30,6 +30,11 @@ namespace BertoniTest.Controllers
             return View();
         }
 
+        public ActionResult Vue()
+        {
+            return View();
+        }
+
         public async Task<List<Album>> GetAlbumsCollectionAsync()
         {
             List<Album> output = new List<Album>();
